@@ -1,0 +1,33 @@
+body {
+    font-family: Arial, "Yu Gothic", "Meiryo", sans-serif;
+    margin: 32px;
+    color: #222;
+}
+
+table {
+    border-collapse: collapse;
+    min-width: 640px;
+}
+
+th,
+td {
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+input,
+textarea {
+    display: block;
+    width: 420px;
+    max-width: 100%;
+    padding: 8px;
+}
+
+button {
+    padding: 8px 16px;
+}
