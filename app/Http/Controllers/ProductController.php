@@ -4,40 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Product;
+use App\Http\Requests\ProductRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    private function productRules()
-    {
-        return [
-            'company_id' => ['required', 'integer'],
-            'product_name' => ['required', 'string', 'max:255'],
-            'price' => ['required', 'integer', 'min:0'],
-            'stock' => ['required', 'integer', 'min:0'],
-            'comment' => ['nullable', 'string'],
-            'image' => ['nullable', 'image'],
-        ];
-    }
-
-    private function productMessages()
-    {
-        return [
-            'company_id.required' => 'メーカーを選択してください。',
-            'company_id.integer' => 'メーカーの指定が正しくありません。',
-            'product_name.required' => '商品名を入力してください。',
-            'product_name.max' => '商品名は255文字以内で入力してください。',
-            'price.required' => '価格を入力してください。',
-            'price.integer' => '価格は整数で入力してください。',
-            'price.min' => '価格は0以上で入力してください。',
-            'stock.required' => '在庫数を入力してください。',
-            'stock.integer' => '在庫数は整数で入力してください。',
-            'stock.min' => '在庫数は0以上で入力してください。',
-            'comment.string' => 'コメントは文字で入力してください。',
-            'image.image' => '商品画像には画像ファイルを選択してください。',
-        ];
-    }
-
     public function index(Request $request)
     {
         $conditions = [
@@ -57,16 +30,30 @@ class ProductController extends Controller
         return view('products.create', compact('companies'));
     }
 
-    public function store(Request $request)
+    public function store(ProductRequest $request)
     {
-        $data = $request->validate($this->productRules(), $this->productMessages());
+        $storedPath = null;
 
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('public/images');
-            $data['img_path'] = str_replace('public/', 'storage/', $path);
+        try {
+            $data = $request->validated();
+
+            if ($request->hasFile('image')) {
+                $storedPath = $request->file('image')->store('public/images');
+                $data['img_path'] = str_replace('public/', 'storage/', $storedPath);
+            }
+
+            DB::transaction(function () use ($data) {
+                Product::registProduct($data);
+            });
+        } catch (\Throwable $exception) {
+            if ($storedPath) {
+                Storage::delete($storedPath);
+            }
+
+            report($exception);
+
+            return back()->withInput()->with('error_message', '商品の登録に失敗しました。もう一度お試しください。');
         }
-
-        Product::registProduct($data);
 
         return redirect()->route('products.index');
     }
@@ -94,23 +81,45 @@ class ProductController extends Controller
         return view('products.edit', compact('product', 'companies'));
     }
 
-    public function update(Request $request, $id)
+    public function update(ProductRequest $request, $id)
     {
-        $data = $request->validate($this->productRules(), $this->productMessages());
+        $storedPath = null;
 
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('public/images');
-            $data['img_path'] = str_replace('public/', 'storage/', $path);
+        try {
+            $data = $request->validated();
+
+            if ($request->hasFile('image')) {
+                $storedPath = $request->file('image')->store('public/images');
+                $data['img_path'] = str_replace('public/', 'storage/', $storedPath);
+            }
+
+            DB::transaction(function () use ($id, $data) {
+                Product::updateProduct($id, $data);
+            });
+        } catch (\Throwable $exception) {
+            if ($storedPath) {
+                Storage::delete($storedPath);
+            }
+
+            report($exception);
+
+            return back()->withInput()->with('error_message', '商品の更新に失敗しました。もう一度お試しください。');
         }
-
-        Product::updateProduct($id, $data);
 
         return redirect()->route('products.show', $id);
     }
 
     public function destroy($id)
     {
-        Product::deleteProduct($id);
+        try {
+            DB::transaction(function () use ($id) {
+                Product::deleteProduct($id);
+            });
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->with('error_message', '商品の削除に失敗しました。もう一度お試しください。');
+        }
 
         return redirect()->route('products.index');
     }

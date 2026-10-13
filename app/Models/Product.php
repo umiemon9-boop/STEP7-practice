@@ -42,7 +42,7 @@ class Product extends Model
             'product_name' => $data['product_name'],
             'price' => $data['price'],
             'stock' => $data['stock'],
-            'comment' => $data['comment'],
+            'comment' => $data['comment'] ?? null,
             'img_path' => $data['img_path'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -74,7 +74,7 @@ class Product extends Model
             'product_name' => $data['product_name'],
             'price' => $data['price'],
             'stock' => $data['stock'],
-            'comment' => $data['comment'],
+            'comment' => $data['comment'] ?? null,
             'updated_at' => now(),
         ];
 

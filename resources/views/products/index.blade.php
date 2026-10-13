@@ -44,6 +44,10 @@
         </div>
     </form>
 
+    @if (session('error_message'))
+        <p class="error-list">{{ session('error_message') }}</p>
+    @endif
+
     <table border="1">
         <thead>
             <tr>
@@ -54,6 +58,7 @@
                 <th>価格</th>
                 <th>在庫数</th>
                 <th>詳細</th>
+                <th>削除</th>
             </tr>
         </thead>
         <tbody>
@@ -73,6 +78,13 @@
                     <td>{{ $product->stock }}</td>
                     <td>
                         <a class="button-link button-secondary" href="{{ route('products.show', $product->id) }}">詳細</a>
+                    </td>
+                    <td>
+                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('この商品を削除します。よろしいですか？');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="button-danger" type="submit">削除</button>
+                        </form>
                     </td>
                 </tr>
             @endforeach

@@ -74,12 +74,6 @@
 
         <a class="button-link button-secondary" href="{{ route('products.edit', $product->id) }}">編集</a>
 
-        <form action="{{ route('products.destroy', $product->id) }}" method="POST">
-            @csrf
-            @method('DELETE')
-            <button class="button-danger" type="submit">削除</button>
-        </form>
-
         <a class="button-link button-secondary" href="{{ route('products.index') }}">一覧へ戻る</a>
     </div>
 </body>
