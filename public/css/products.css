@@ -124,6 +124,10 @@ th {
     color: #b42318;
 }
 
+.success-message {
+    color: #067647;
+}
+
 .field-error {
     color: #b42318;
     font-size: 14px;

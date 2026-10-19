@@ -24,6 +24,10 @@
         <p class="error-list">{{ session('error_message') }}</p>
     @endif
 
+    @if (session('success_message'))
+        <p class="success-message">{{ session('success_message') }}</p>
+    @endif
+
     @if ($errors->any())
         <ul class="error-list">
             @foreach ($errors->all() as $error)

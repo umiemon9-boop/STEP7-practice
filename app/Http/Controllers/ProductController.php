@@ -55,7 +55,9 @@ class ProductController extends Controller
             return back()->withInput()->with('error_message', '商品の登録に失敗しました。もう一度お試しください。');
         }
 
-        return redirect()->route('products.index');
+        return redirect()
+            ->route('products.create')
+            ->with('success_message', '商品を登録しました。');
     }
 
     public function show($id)
@@ -106,7 +108,9 @@ class ProductController extends Controller
             return back()->withInput()->with('error_message', '商品の更新に失敗しました。もう一度お試しください。');
         }
 
-        return redirect()->route('products.show', $id);
+        return redirect()
+            ->route('products.edit', $id)
+            ->with('success_message', '商品を更新しました。');
     }
 
     public function destroy($id)
