@@ -29,9 +29,7 @@ class Sale extends Model
 
     public static function purchase($product_id)
     {
-        DB::beginTransaction();
-
-        try {
+        return DB::transaction(function () use ($product_id) {
             $product = DB::table('products')
                 ->where('id', $product_id)
                 ->lockForUpdate()
@@ -45,22 +43,27 @@ class Sale extends Model
                 throw new RuntimeException('在庫がありません。');
             }
 
-            DB::table('sales')->insert([
+            $updated = DB::table('products')
+                ->where('id', $product_id)
+                ->where('stock', '>', 0)
+                ->decrement('stock');
+
+            if ($updated !== 1) {
+                throw new RuntimeException('在庫がありません。');
+            }
+
+            $saleId = DB::table('sales')->insertGetId([
                 'product_id' => $product_id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            DB::table('products')
-                ->where('id', $product_id)
-                ->decrement('stock');
-
-            DB::commit();
-        } catch (RuntimeException $e) {
-            DB::rollBack();
-
-            throw $e;
-        }
+            return [
+                'sale_id' => $saleId,
+                'product_id' => (int) $product_id,
+                'remaining_stock' => $product->stock - 1,
+            ];
+        });
     }
 
     public static function getSummary()

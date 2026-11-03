@@ -10,7 +10,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    public static function getList($conditions = [])
+    public static function getList($conditions = [], $sort = 'id', $direction = 'desc')
     {
         $query = DB::table('products')
             ->join('companies', 'products.company_id', '=', 'companies.id')
@@ -31,6 +31,25 @@ class Product extends Model
         if (!empty($conditions['company_id'])) {
             $query->where('products.company_id', $conditions['company_id']);
         }
+
+        foreach (['price', 'stock'] as $field) {
+            if (isset($conditions[$field . '_min']) && $conditions[$field . '_min'] !== '') {
+                $query->where('products.' . $field, '>=', $conditions[$field . '_min']);
+            }
+
+            if (isset($conditions[$field . '_max']) && $conditions[$field . '_max'] !== '') {
+                $query->where('products.' . $field, '<=', $conditions[$field . '_max']);
+            }
+        }
+
+        $sortColumns = [
+            'id' => 'products.id',
+            'product_name' => 'products.product_name',
+            'company_name' => 'companies.company_name',
+            'price' => 'products.price',
+            'stock' => 'products.stock',
+        ];
+        $query->orderBy($sortColumns[$sort] ?? 'products.id', $direction === 'asc' ? 'asc' : 'desc');
 
         return $query->get();
     }

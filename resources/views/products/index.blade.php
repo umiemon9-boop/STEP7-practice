@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>商品一覧</title>
     <link rel="stylesheet" href="{{ asset('css/products.css') }}">
 </head>
@@ -20,18 +21,35 @@
         </nav>
     </header>
 
-    <form class="search-form" action="{{ route('products.index') }}" method="GET">
+    <form class="search-form" id="search-form" action="{{ route('products.index') }}" method="GET">
         <div class="form-row">
             <label for="product_name">商品名</label>
-            <input type="text" id="product_name" name="product_name" value="{{ $conditions['product_name'] }}">
+            <input type="text" id="product_name" name="product_name" value="{{ $conditions['product_name'] ?? '' }}">
         </div>
+
+        <div class="form-row">
+            <label>価格</label>
+            <input type="number" min="0" name="price_min" placeholder="下限" value="{{ $conditions['price_min'] ?? '' }}">
+            <span>〜</span>
+            <input type="number" min="0" name="price_max" placeholder="上限" value="{{ $conditions['price_max'] ?? '' }}">
+        </div>
+
+        <div class="form-row">
+            <label>在庫数</label>
+            <input type="number" min="0" name="stock_min" placeholder="下限" value="{{ $conditions['stock_min'] ?? '' }}">
+            <span>〜</span>
+            <input type="number" min="0" name="stock_max" placeholder="上限" value="{{ $conditions['stock_max'] ?? '' }}">
+        </div>
+
+        <input type="hidden" name="sort" id="sort-column" value="{{ $sort }}">
+        <input type="hidden" name="direction" id="sort-direction" value="{{ $direction }}">
 
         <div class="form-row">
             <label for="company_id">メーカー</label>
             <select id="company_id" name="company_id">
                 <option value="">すべて</option>
                 @foreach ($companies as $company)
-                    <option value="{{ $company->id }}" @selected($conditions['company_id'] == $company->id)>
+                    <option value="{{ $company->id }}" @selected(($conditions['company_id'] ?? '') == $company->id)>
                         {{ $company->company_name }}
                     </option>
                 @endforeach
@@ -48,47 +66,25 @@
         <p class="error-list">{{ session('error_message') }}</p>
     @endif
 
-    <table border="1">
+    <p id="ajax-message" role="status" aria-live="polite"></p>
+    <table id="products-table" border="1">
         <thead>
             <tr>
-                <th>ID</th>
+                <th data-sort="id" aria-sort="{{ $sort === 'id' ? ($direction === 'asc' ? 'ascending' : 'descending') : 'none' }}">ID</th>
                 <th>画像</th>
-                <th>商品名</th>
-                <th>メーカー</th>
-                <th>価格</th>
-                <th>在庫数</th>
+                <th data-sort="product_name">商品名</th>
+                <th data-sort="company_name">メーカー</th>
+                <th data-sort="price">価格</th>
+                <th data-sort="stock">在庫数</th>
                 <th>詳細</th>
                 <th>削除</th>
             </tr>
         </thead>
-        <tbody>
-            @foreach ($products as $product)
-                <tr>
-                    <td>{{ $product->id }}</td>
-                    <td>
-                        @if ($product->img_path)
-                            <img class="product-image" src="{{ asset($product->img_path) }}" alt="{{ $product->product_name }}">
-                        @else
-                            画像なし
-                        @endif
-                    </td>
-                    <td>{{ $product->product_name }}</td>
-                    <td>{{ $product->company_name }}</td>
-                    <td>{{ $product->price }}</td>
-                    <td>{{ $product->stock }}</td>
-                    <td>
-                        <a class="button-link button-secondary" href="{{ route('products.show', $product->id) }}">詳細</a>
-                    </td>
-                    <td>
-                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('この商品を削除します。よろしいですか？');">
-                            @csrf
-                            @method('DELETE')
-                            <button class="button-danger" type="submit">削除</button>
-                        </form>
-                    </td>
-                </tr>
-            @endforeach
+        <tbody id="products-table-body">
+            @include('products.partials.rows', ['products' => $products])
         </tbody>
     </table>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('js/products.js') }}"></script>
 </body>
 </html>

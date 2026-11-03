@@ -5,22 +5,31 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\Product;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\ProductSearchRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index(Request $request)
+    public function index(ProductSearchRequest $request)
     {
-        $conditions = [
-            'product_name' => $request->input('product_name'),
-            'company_id' => $request->input('company_id'),
-        ];
-        $products = Product::getList($conditions);
+        $conditions = $request->only([
+            'product_name', 'company_id', 'price_min', 'price_max', 'stock_min', 'stock_max',
+        ]);
+        $sort = $request->input('sort', 'id');
+        $direction = $request->input('direction', 'desc');
+        $products = Product::getList($conditions, $sort, $direction);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'rows' => view('products.partials.rows', compact('products'))->render(),
+            ]);
+        }
+
         $companies = Company::getList();
 
-        return view('products.index', compact('products', 'companies', 'conditions'));
+        return view('products.index', compact('products', 'companies', 'conditions', 'sort', 'direction'));
     }
 
     public function create()
@@ -122,7 +131,15 @@ class ProductController extends Controller
         } catch (\Throwable $exception) {
             report($exception);
 
+            if (request()->expectsJson()) {
+                return response()->json(['message' => '商品の削除に失敗しました。'], 500);
+            }
+
             return back()->with('error_message', '商品の削除に失敗しました。もう一度お試しください。');
+        }
+
+        if (request()->expectsJson()) {
+            return response()->json(['message' => '商品を削除しました。']);
         }
 
         return redirect()->route('products.index');
